@@ -6,7 +6,7 @@ import { Dialog, DialogClose } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { UserProfile } from '@/components/user-profile'
-import { api } from '@/convex/_generated/api'
+import { api } from '@/convex/_generated/api' // Ensure this path is correct or adjust it to the actual location of the 'api' module
 import { HamburgerMenuIcon } from '@radix-ui/react-icons'
 import { useAction, useQuery } from 'convex/react'
 import { Banknote, Folder, HomeIcon, Settings } from 'lucide-react'
@@ -19,9 +19,14 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
   const getDashboardUrl = useAction(api.subscriptions.getUserDashboardUrl);
 
   const handleManageSubscription = async () => {
+    if (!subscription?.customerId) {
+      console.error("Customer ID is undefined or null.");
+      return;
+    }
+  
     try {
       const result = await getDashboardUrl({
-        customerId: subscription?.customerId!
+        customerId: subscription.customerId
       });
       if (result?.url) {
         window.location.href = result.url;

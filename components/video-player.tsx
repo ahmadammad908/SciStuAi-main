@@ -80,11 +80,7 @@ export const VideoPlayer: React.FC<CustomVideoPlayerProps> = ({ videoSrc }) => {
     };
   }, [isFullscreen, lastMouseMoveTime]);
 
-  useEffect(() => {
-    if (!isFullscreen) {
-      setShowControls(true);
-    }
-  }, [isFullscreen]);
+  
 
   useEffect(() => {
     const handleFullscreenChange = () => {

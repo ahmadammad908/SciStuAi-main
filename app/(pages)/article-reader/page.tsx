@@ -1,5 +1,6 @@
 // app/(main)/article-reader/page.tsx
 "use client";
+import Image from "next/image"; // ✅ NEW: Optimized image import
 
 import { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -237,7 +238,7 @@ export default function ArticleReaderPage() {
       isAI,
       timestamp: new Date()
     };
-    
+
     setFolders(prev =>
       prev.map(folder => ({
         ...folder,
@@ -248,7 +249,7 @@ export default function ArticleReaderPage() {
         )
       }))
     );
-    
+
     if (isAI) {
       setTimeout(() => {
         const aiComment: Comment = {
@@ -283,7 +284,13 @@ export default function ArticleReaderPage() {
       <div className="lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
-            <img src="/favicon.ico" alt="SciStuAI" className="w-6 h-6" />
+            <Image
+              src="/favicon.ico"
+              alt="SciStuAI"
+              width={24}
+              height={24}
+              className="w-6 h-6"
+            />
             <h1 className="text-lg font-semibold">ScistuAI</h1>
           </Link>
 

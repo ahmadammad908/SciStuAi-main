@@ -1,25 +1,24 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { createGroq } from '@ai-sdk/groq';
+import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
-import { experimental_createProviderRegistry as createProviderRegistry } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createProviderRegistry, Provider } from 'ai';
 
-// create provider registry
 export const registry = createProviderRegistry({
-  // register provider with prefix and default setup:
   anthropic: createAnthropic({
-    // custom settings
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  }),
-  // register provider with prefix and custom setup:
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  })  as unknown as Provider,
   openai: createOpenAI({
-    apiKey:process.env.OPENAI_API_KEY,
-  }),
+    apiKey: process.env.OPENAI_API_KEY!,
+  }) as unknown as Provider,
   deepseek: createDeepSeek({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-  }),
+    apiKey: process.env.DEEPSEEK_API_KEY!,
+  }) as unknown as Provider,
   groq: createGroq({
-    // custom settings
-    apiKey: process.env.GROQ_API_KEY,
+    apiKey: process.env.GROQ_API_KEY!,
   }),
+  gemini: createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY!,
+  }) as unknown as Provider,
 });

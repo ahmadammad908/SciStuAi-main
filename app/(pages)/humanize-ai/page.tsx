@@ -10,6 +10,7 @@ import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Share, Sparkles, Copy, BookText, FileText } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image"; // ✅ NEW: Optimized image import
 
 interface HumanizeResult {
   id: string;
@@ -133,7 +134,7 @@ export default function HumanizeAIPage() {
       <div className="lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
-            <img src="/favicon.ico" alt="SciStuAI" className="w-6 h-6" />
+            <Image src="/favicon.ico" alt="SciStuAI" className="w-6 h-6" />
             <h1 className="text-lg font-semibold">ScistuAI</h1>
           </Link>
 

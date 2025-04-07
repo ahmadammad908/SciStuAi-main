@@ -14,9 +14,7 @@ export default function BlogList({ posts }: { posts: Post[] }) {
                         </h2>
                     </Link>
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <time dateTime={post.date}>
-                            {new Date(post.date).toLocaleDateString()}
-                        </time>
+                        
                         {post.readingTime && <span>• {post.readingTime}</span>}
                     </div>
                     <p className="text-gray-800">{post.excerpt}</p>

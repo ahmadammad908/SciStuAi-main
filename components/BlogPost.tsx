@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react";
 import Head from "next/head";
+import Image from "next/image";
 
 export default function BlogPost({ post }: { post: any }) {
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -73,7 +74,7 @@ export default function BlogPost({ post }: { post: any }) {
 
           <h1 className="text-1xl font-bold mb-4 mt-[15px] ">Author Headline :   <span className="text-gray-500 font-bold">{post.headline}</span></h1>
 
-          <img src={post.image} alt={post.title} className="w-9 h-9 rounded-full object-cover mt-[50px]"
+          <Image src={post.image} alt={post.title} className="w-9 h-9 rounded-full object-cover mt-[50px]"
           />
           {/* Meta Information */}
 

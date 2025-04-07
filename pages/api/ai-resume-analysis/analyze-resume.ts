@@ -29,6 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const pdfBuffer = Buffer.from(resumeData.buffer.data);
         const { text } = await pdf(pdfBuffer);
 
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({ error: "PDF appears to be empty or unreadable" });
+        }
+
         // AI Analysis
         const analysis = await performResumeAnalysis(text, jobDescription);
 
@@ -36,7 +40,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     } catch (error) {
         console.error("Resume analysis error:", error);
-        res.status(500).json({ error: "Failed to analyze resume PDF" });
+        res.status(500).json({ 
+            error: "Failed to analyze resume PDF",
+            details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
+        });
     }
 }
 
@@ -57,15 +64,23 @@ async function performResumeAnalysis(text: string, jobDescription: string): Prom
     - atsOptimization (array)
     - keywordAnalysis (object)
     - sentiment (string)
-  `;
+    `;
+
+    // Fixed: Use proper model format with provider prefix
+    const modelName = "openai:gpt-4"; // Correct format: provider:model-name
 
     const result = await streamText({
-        model: registry.languageModel("gpt-4"),
+        model: registry.languageModel(modelName),
         system: analysisPrompt,
         messages: [{ role: "user", content: text }],
         temperature: 0.2,
         maxTokens: 2000
     });
 
-    return JSON.parse(await result.text);
+    try {
+        return JSON.parse(await result.text);
+    } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        throw new Error("Invalid analysis response format");
+    }
 }

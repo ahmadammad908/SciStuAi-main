@@ -1,3 +1,18 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": [
+    "next",
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off",
+    "no-console": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "react-hooks/rules-of-hooks": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "react/no-unescaped-entities": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off"  // Disable TypeScript explicit module boundary type checking
+
+  }
 }

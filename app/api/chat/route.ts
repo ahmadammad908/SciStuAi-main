@@ -12,7 +12,7 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const {
     messages,
-    model,
+    model: modelType,
     temperature,
     maxTokens,
     topP,
@@ -37,19 +37,15 @@ export async function POST(req: Request) {
     - Prioritize user safety and ethical considerations
   `;
 
-  const role =
-    messages?.[messages?.length - 1].role === "user" ? "user" : "assistant";
-
   const enhancedModel = wrapLanguageModel({
     model: groq("deepseek-r1-distill-llama-70b"),
     middleware: extractReasoningMiddleware({ tagName: "think" }),
   });
 
   const result = streamText({
-    model:
-      model === "deepseek:deepseek-reasoner"
-        ? enhancedModel
-        : registry.languageModel(model),
+    model: modelType === "deepseek:deepseek-reasoner"
+      ? enhancedModel
+      : registry.languageModel(modelType),
     messages,
     temperature: temperature || 0.7,
     maxTokens: maxTokens || 1000,
@@ -57,7 +53,6 @@ export async function POST(req: Request) {
     frequencyPenalty: frequencyPenalty || 0.0,
     presencePenalty: presencePenalty || 0.0,
     system: systemPrompt || defaultSystemPrompt,
-    // tools,
     maxSteps: 5,
     onStepFinish({
       text,
@@ -67,7 +62,6 @@ export async function POST(req: Request) {
       usage,
       stepType,
     }) {
-      // your own logic, e.g. for saving the chat history or recording usage
       console.log("stepType", stepType);
       console.log("text", text);
       console.log("finishReason", finishReason);
@@ -75,14 +69,12 @@ export async function POST(req: Request) {
 
       if (finishReason === "tool-calls") {
         const toolInvocations = toolResults?.[0];
-        // saveToolResult(userId!, toolInvocations);
         console.log("toolInvocations", toolInvocations);
       }
     },
     onFinish: ({ text, toolResults, toolCalls, finishReason }) => {
       console.log("text", text);
       console.log("finishReason", finishReason);
-      // insertMessage(userId!, "assistant", text);
     },
   });
 

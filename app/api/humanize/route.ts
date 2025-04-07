@@ -5,14 +5,20 @@ import {
     streamText,
     experimental_wrapLanguageModel as wrapLanguageModel,
 } from "ai";
-import type { NextApiRequest, NextApiResponse } from "next";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+type ValidModel = 
+  | `groq:${'llama3-70b-8192' | 'llama3-8b-8192' | 'mixtral-8x7b-32768' | 'deepseek-r1-distill-llama-70b'}` 
+  | `deepseek:${'deepseek-reasoner' | string}`
+  | `anthropic:${string}`
+  | `openai:${string}`
+  | `gemini:${string}`;
+
 interface HumanizeRequest {
     text: string;
-    model?: string;
+    model?: ValidModel;
     temperature?: number;
     maxTokens?: number;
     topP?: number;
@@ -22,7 +28,7 @@ interface HumanizeRequest {
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json() as HumanizeRequest;
+        const body = (await request.json()) as Partial<HumanizeRequest>;
         const {
             text,
             model = "deepseek:deepseek-reasoner",
@@ -41,31 +47,31 @@ export async function POST(request: Request) {
         }
 
         const systemPrompt = `
-      You are an advanced text humanization engine. Your task is to:
-      1. Analyze and rewrite AI-generated text to sound more natural and human-like
-      2. Maintain the original meaning and intent
-      3. Use conversational language and natural phrasing
-      4. Avoid technical jargon and overly formal constructs
-      5. Add appropriate colloquialisms where suitable
-      6. Ensure readability for a general audience
+You are an advanced text humanization engine. Your task is to:
+1. Analyze and rewrite AI-generated text to sound more natural and human-like
+2. Maintain the original meaning and intent
+3. Use conversational language and natural phrasing
+4. Avoid technical jargon and overly formal constructs
+5. Add appropriate colloquialisms where suitable
+6. Ensure readability for a general audience
 
-      Guidelines:
-      - Preserve technical accuracy when present
-      - Maintain appropriate tone for the context
-      - Keep paragraphs concise and focused
-      - Use contractions where natural
-      - Vary sentence structure
-    `;
+Guidelines:
+- Preserve technical accuracy when present
+- Maintain appropriate tone for the context
+- Keep paragraphs concise and focused
+- Use contractions where natural
+- Vary sentence structure
+`;
 
         const enhancedModel = wrapLanguageModel({
             model: groq("deepseek-r1-distill-llama-70b"),
             middleware: extractReasoningMiddleware({ tagName: "humanize-process" }),
         });
 
-        const result = streamText({
+        const result = await streamText({
             model: model === "deepseek:deepseek-reasoner"
                 ? enhancedModel
-                : registry.languageModel(model),
+                : registry.languageModel(model as any),
             messages: [{
                 role: "user",
                 content: text
@@ -76,48 +82,19 @@ export async function POST(request: Request) {
             frequencyPenalty,
             presencePenalty,
             system: systemPrompt,
-            maxSteps: 3,
-            onStepFinish({ text, finishReason, usage }) {
-                console.log("Humanization step complete:", {
-                    finishReason,
-                    usage
-                });
-            },
-            onFinish({ text }) {
-                console.log("Final humanized text:", text);
-            },
         });
 
-        const stream = result.toDataStreamResponse({
-            sendReasoning: false
-        });
-
-        // Convert ReadableStream to text before sending
-        const chunks = [];
-        const reader = stream.body?.getReader();
-        if (!reader) {
-            throw new Error("Stream reader not available");
-        }
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-        }
-
-        const humanizedText = new TextDecoder().decode(Buffer.concat(chunks));
-
-        return new Response(JSON.stringify({ result: humanizedText }), {
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+        // Return the streaming response directly
+        return result.toDataStreamResponse();
 
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error("Humanization Error:", errorMessage);
 
-        return new Response(JSON.stringify({ error: errorMessage }), {
+        return new Response(JSON.stringify({ 
+            error: "Failed to process request",
+            details: errorMessage 
+        }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });

@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { registry } from "@/utils/registry";
 
+export const maxDuration = 30; // Set maximum execution duration
+
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
         const resumeFile = formData.get('resume') as File;
         const jobDescription = formData.get('jobDescription') as string || "";
 
+        // Validate inputs
         if (!resumeFile) {
             return NextResponse.json(
                 { error: "No resume file provided" },
@@ -44,11 +47,10 @@ export async function POST(req: NextRequest) {
         const pdfBuffer = Buffer.from(arrayBuffer);
         delete (pdfBuffer as any).path;
 
-        // Parse PDF with error handling
+        // Parse PDF
         let pdfText;
         try {
             const { default: pdf } = await import("pdf-parse");
-            // Use pdfBuffer directly after removing its path property
             const pdfData = await pdf(pdfBuffer);
             pdfText = pdfData.text;
 
@@ -76,7 +78,10 @@ export async function POST(req: NextRequest) {
         } catch (analysisError) {
             console.error("AI analysis error:", analysisError);
             return NextResponse.json(
-                { error: "Failed to analyze the resume content" },
+                { 
+                    error: "Failed to analyze the resume content",
+                    details: process.env.NODE_ENV === 'development' ? String(analysisError) : undefined
+                },
                 { status: 500 }
             );
         }
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
             {
                 error: "Failed to process the resume",
-                details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+                details: process.env.NODE_ENV === 'development' ? String(error) : undefined
             },
             { status: 500 }
         );
@@ -112,13 +117,21 @@ async function performResumeAnalysis(text: string, jobDescription: string) {
     - sentiment (string)
     `;
 
+    // Fix: Use proper model format with provider prefix
+    const modelName = "openai:gpt-4"; // Correct format: provider:model-name
+
     const result = await streamText({
-        model: registry.languageModel("gpt-4"),
+        model: registry.languageModel(modelName),
         system: analysisPrompt,
         messages: [{ role: "user", content: text }],
         temperature: 0.2,
         maxTokens: 2000
     });
 
-    return JSON.parse(await result.text);
+    try {
+        return JSON.parse(await result.text);
+    } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        throw new Error("Invalid analysis response format");
+    }
 }

@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,15 +10,18 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useUser } from '@clerk/nextjs';
+import { useUser } from "@clerk/nextjs";
 import { Bell, Globe, Lock, Mail, Moon, Palette, Shield } from "lucide-react";
 
 export default function SettingsPage() {
-  const user = useUser();
+  const { user } = useUser();
+
+  const firstName = user?.firstName ?? "";
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
+  const username = user?.username ?? "";
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-2">Manage your account settings and preferences</p>
@@ -33,7 +37,6 @@ export default function SettingsPage() {
 
         <TabsContent value="account">
           <div className="space-y-6">
-            {/* Profile Settings */}
             <Card>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
@@ -51,15 +54,15 @@ export default function SettingsPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="Your name" defaultValue={user?.user?.firstName ? user?.user?.firstName : ""} />
+                    <Input id="name" placeholder="Your name" defaultValue={firstName} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="Your email" defaultValue={user?.user?.emailAddresses?.[0]?.emailAddress!} />
+                    <Input id="email" type="email" placeholder="Your email" defaultValue={email} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">Username</Label>
-                    <Input id="username" placeholder="Username" defaultValue={user?.user?.username!} />
+                    <Input id="username" placeholder="Username" defaultValue={username} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -70,7 +73,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Preferences */}
             <Card>
               <CardHeader>
                 <CardTitle>Preferences</CardTitle>
@@ -252,7 +254,9 @@ export default function SettingsPage() {
                       <p className="font-medium">Current Session</p>
                       <p className="text-sm text-muted-foreground">Last active: Just now</p>
                     </div>
-                    <Button variant="outline" className="text-destructive">Sign Out</Button>
+                    <Button variant="outline" className="text-destructive">
+                      Sign Out
+                    </Button>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
@@ -260,7 +264,9 @@ export default function SettingsPage() {
                       <p className="font-medium">Other Sessions</p>
                       <p className="text-sm text-muted-foreground">2 active sessions</p>
                     </div>
-                    <Button variant="outline" className="text-destructive">Sign Out All</Button>
+                    <Button variant="outline" className="text-destructive">
+                      Sign Out All
+                    </Button>
                   </div>
                 </div>
               </CardContent>
