@@ -144,7 +144,11 @@ export default function PlaygroundPage() {
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium">Homework Helper</h2>
             <Badge variant="outline" className="text-xs">
-              {model?.split(":")[1] || model}
+              <Badge variant="outline" className="text-xs">
+                {model === "groq:deepseek-r1-distill-llama-70b"
+                  ? "GROK"
+                  : model?.split(":")[1] || model}
+              </Badge>
             </Badge>
           </div>
           <div className="flex items-center gap-2">
