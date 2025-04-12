@@ -38,6 +38,7 @@ export default function PlaygroundPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4000);
@@ -47,30 +48,63 @@ export default function PlaygroundPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const { messages, isLoading, input, handleInputChange, handleSubmit } = useChat({
     body: { model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, systemPrompt },
   });
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, input]);
+    if (!isInputFocused) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, input, isInputFocused]);
 
-  // Prevent mobile zoom and scroll issues
+  // Improved mobile handling
   useEffect(() => {
     const handleFocus = () => {
-      if (textareaRef.current) {
-        // Ensure the cursor is visible without scrolling
-        textareaRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
+      setIsInputFocused(true);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.scrollIntoView({ 
+            block: 'center',
+            behavior: 'smooth'
+          });
+        }
+      }, 300);
+    };
+
+    const handleBlur = () => {
+      setIsInputFocused(false);
     };
 
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.addEventListener('focus', handleFocus);
-      return () => textarea.removeEventListener('focus', handleFocus);
+      textarea.addEventListener('blur', handleBlur);
+      return () => {
+        textarea.removeEventListener('focus', handleFocus);
+        textarea.removeEventListener('blur', handleBlur);
+      };
     }
   }, []);
+
+  // Handle keyboard appearance on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (isInputFocused && textareaRef.current) {
+        setTimeout(() => {
+          textareaRef.current?.scrollIntoView({ 
+            block: 'center',
+            behavior: 'smooth'
+          });
+        }, 300);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isInputFocused]);
 
   const toggleReasoning = (index: number) => {
     setExpandedReasoning((prev) =>
@@ -343,7 +377,7 @@ export default function PlaygroundPage() {
             </ScrollArea>
 
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
-              <form onSubmit={handleSubmit} className="relative">
+              <form ref={formRef} onSubmit={handleSubmit} className="relative">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -354,6 +388,8 @@ export default function PlaygroundPage() {
                       handleSubmit(e);
                     }
                   }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="Ask your homework question..."
                   className="min-h-[60px] bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base"
                   style={{
