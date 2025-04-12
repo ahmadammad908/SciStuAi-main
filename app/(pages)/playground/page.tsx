@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ChevronDown, ChevronUp, ArrowUp, Copy, Check, Share, Sparkles, BookText, FileText } from 'lucide-react';
-import Image from "next/image";
+import { ChevronDown, ChevronUp, ArrowUp, Copy, Check, Share, Sparkles, BookText, FileText, Menu } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "ai/react";
@@ -36,6 +35,8 @@ export default function PlaygroundPage() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [expandedReasoning, setExpandedReasoning] = useState<number[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isShareLoading, setIsShareLoading] = useState(false);
 
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4000);
@@ -66,6 +67,45 @@ export default function PlaygroundPage() {
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
       console.error('Failed to copy code: ', err);
+    }
+  };
+
+  const handleShare = async () => {
+    setIsShareLoading(true);
+    try {
+      // Format the conversation for sharing
+      const shareContent = messages.map(msg => {
+        return `${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.content}\n${
+          msg.reasoning ? `Reasoning: ${msg.reasoning}\n` : ''
+        }`;
+      }).join('\n');
+
+      // Add system prompt if exists
+      const fullContent = systemPrompt 
+        ? `System Prompt: ${systemPrompt}\n\n${shareContent}`
+        : shareContent;
+
+      // Add current model and parameters
+      const finalContent = `${fullContent}\n\n---\nModel: ${model}\nTemperature: ${temperature}\nMax Tokens: ${maxTokens}`;
+
+      // Use Web Share API if available (mobile devices)
+      if (navigator.share) {
+        await navigator.share({
+          title: 'ScistuAI Conversation',
+          text: finalContent,
+        });
+      } else {
+        // Fallback for desktop - copy to clipboard
+        await navigator.clipboard.writeText(finalContent);
+        alert('Conversation copied to clipboard! You can now paste it anywhere.');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      if (error instanceof Error && !error.toString().includes('AbortError')) {
+        alert('Failed to share. Please try again.');
+      }
+    } finally {
+      setIsShareLoading(false);
     }
   };
 
@@ -107,8 +147,8 @@ export default function PlaygroundPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
-      {/* Sidebar */}
-      <aside className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:block w-full lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
             <h1 className="text-lg font-semibold">ScistuAI</h1>
@@ -139,25 +179,97 @@ export default function PlaygroundPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col">
-        <header className="flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <h2 className="text-lg font-medium truncate w-full">Homework Helper</h2>
+            
+          </div>
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 w-8 p-0"
+              onClick={handleShare}
+              disabled={isShareLoading || messages.length === 0}
+              aria-label="Share conversation"
+            >
+              {isShareLoading ? (
+                <span className="animate-pulse">...</span>
+              ) : (
+                <Share className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </header>
+
+        {/* Desktop Header */}
+        <header className="hidden lg:flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium">Homework Helper</h2>
             <Badge variant="outline" className="text-xs">
-              <Badge variant="outline" className="text-xs">
-                {model === "groq:deepseek-r1-distill-llama-70b"
-                  ? "GROK"
-                  : model?.split(":")[1] || model}
-              </Badge>
+              {model === "groq:deepseek-r1-distill-llama-70b"
+                ? "GROK"
+                : model?.split(":")[1] || model}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="outline" size="sm">
-              <Share className="w-4 h-4 mr-2" /> Share
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleShare}
+              disabled={isShareLoading || messages.length === 0}
+            >
+              {isShareLoading ? (
+                <span className="animate-pulse">Sharing...</span>
+              ) : (
+                <>
+                  <Share className="w-4 h-4 mr-2" /> Share
+                </>
+              )}
             </Button>
           </div>
         </header>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-white dark:bg-black border-b dark:border-zinc-800 border-zinc-200">
+            <div className="p-4 space-y-2">
+              <Button variant="secondary" className="w-full justify-start gap-2">
+                <Sparkles className="w-4 h-4" /> Homework Helper
+              </Button>
+
+              <Link href="/article-reader" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <BookText className="w-4 h-4" /> Article Reader
+                </Button>
+              </Link>
+
+              <Link href="/humanize-ai" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Sparkles className="w-4 h-4" /> Humanize AI
+                </Button>
+              </Link>
+
+              <Link href="/resume-analyzer" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <FileText className="w-4 h-4" /> Resume Analyzer
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         <section className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Chat */}
@@ -228,7 +340,12 @@ export default function PlaygroundPage() {
                   className="min-h-[60px] bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200"
                 />
                 <div className="absolute bottom-3 right-3">
-                  <Button type="submit" size="sm" disabled={isLoading || !input.trim()} className="h-8 bg-white hover:bg-zinc-200 text-black">
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    disabled={isLoading || !input.trim()} 
+                    className="h-8 bg-white hover:bg-zinc-200 text-black"
+                  >
                     <ArrowUp className="w-4 h-4" />
                   </Button>
                 </div>
@@ -251,7 +368,7 @@ export default function PlaygroundPage() {
                     <SelectTrigger className="dark:bg-zinc-900/50 border dark:border-zinc-800">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[100]">
                       <SelectItem value="openai:gpt-4o">GPT-4o</SelectItem>
                       <SelectItem value="openai:gpt-4">GPT-4</SelectItem>
                       <SelectItem value="openai:gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
