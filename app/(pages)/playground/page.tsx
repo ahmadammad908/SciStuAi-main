@@ -49,16 +49,26 @@ export default function PlaygroundPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { messages, isLoading, input, handleInputChange, handleSubmit } = useChat({
     body: { model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, systemPrompt },
+    onFinish: () => {
+      // Scroll to bottom when AI finishes responding
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    },
   });
 
+  // Scroll to bottom when messages change (except when input is focused)
   useEffect(() => {
     if (!isInputFocused) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
-  }, [messages, input, isInputFocused]);
+  }, [messages, isInputFocused]);
 
   // Improved mobile handling
   useEffect(() => {
@@ -76,6 +86,10 @@ export default function PlaygroundPage() {
 
     const handleBlur = () => {
       setIsInputFocused(false);
+      // Scroll to bottom when input loses focus
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
     };
 
     const textarea = textareaRef.current;
@@ -105,6 +119,16 @@ export default function PlaygroundPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isInputFocused]);
+
+  // Custom submit handler to ensure scroll happens after submit
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleSubmit(e);
+    // Scroll to bottom after a short delay to allow the message to be added
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   const toggleReasoning = (index: number) => {
     setExpandedReasoning((prev) =>
@@ -325,7 +349,7 @@ export default function PlaygroundPage() {
         <section className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Chat */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="h-full p-4">
+            <ScrollArea ref={scrollAreaRef} className="h-full p-4">
               <div className="max-w-3xl mx-auto space-y-6">
                 <AnimatePresence>
                   {messages.map((message, index) => (
@@ -377,7 +401,7 @@ export default function PlaygroundPage() {
             </ScrollArea>
 
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
-              <form ref={formRef} onSubmit={handleSubmit} className="relative">
+              <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -385,7 +409,7 @@ export default function PlaygroundPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e);
+                      formRef.current?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
                     }
                   }}
                   onFocus={() => setIsInputFocused(true)}
