@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "ai/react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import Head from "next/head";
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -45,6 +46,7 @@ export default function PlaygroundPage() {
   const [presencePenalty, setPresencePenalty] = useState(0.0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages, isLoading, input, handleInputChange, handleSubmit } = useChat({
     body: { model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, systemPrompt },
@@ -53,6 +55,22 @@ export default function PlaygroundPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, input]);
+
+  // Prevent mobile zoom and scroll issues
+  useEffect(() => {
+    const handleFocus = () => {
+      if (textareaRef.current) {
+        // Ensure the cursor is visible without scrolling
+        textareaRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    };
+
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.addEventListener('focus', handleFocus);
+      return () => textarea.removeEventListener('focus', handleFocus);
+    }
+  }, []);
 
   const toggleReasoning = (index: number) => {
     setExpandedReasoning((prev) =>
@@ -73,29 +91,24 @@ export default function PlaygroundPage() {
   const handleShare = async () => {
     setIsShareLoading(true);
     try {
-      // Format the conversation for sharing
       const shareContent = messages.map(msg => {
         return `${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.content}\n${
           msg.reasoning ? `Reasoning: ${msg.reasoning}\n` : ''
         }`;
       }).join('\n');
 
-      // Add system prompt if exists
       const fullContent = systemPrompt 
         ? `System Prompt: ${systemPrompt}\n\n${shareContent}`
         : shareContent;
 
-      // Add current model and parameters
       const finalContent = `${fullContent}\n\n---\nModel: ${model}\nTemperature: ${temperature}\nMax Tokens: ${maxTokens}`;
 
-      // Use Web Share API if available (mobile devices)
       if (navigator.share) {
         await navigator.share({
           title: 'ScistuAI Conversation',
           text: finalContent,
         });
       } else {
-        // Fallback for desktop - copy to clipboard
         await navigator.clipboard.writeText(finalContent);
         alert('Conversation copied to clipboard! You can now paste it anywhere.');
       }
@@ -147,6 +160,11 @@ export default function PlaygroundPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
+      {/* Viewport meta tag for mobile */}
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
+
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:block w-full lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
@@ -192,7 +210,6 @@ export default function PlaygroundPage() {
               <Menu className="w-5 h-5" />
             </Button>
             <h2 className="text-lg font-medium truncate w-full">Homework Helper</h2>
-            
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
@@ -328,6 +345,7 @@ export default function PlaygroundPage() {
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
               <form onSubmit={handleSubmit} className="relative">
                 <Textarea
+                  ref={textareaRef}
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={(e) => {
@@ -337,7 +355,11 @@ export default function PlaygroundPage() {
                     }
                   }}
                   placeholder="Ask your homework question..."
-                  className="min-h-[60px] bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200"
+                  className="min-h-[60px] bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base"
+                  style={{
+                    fontSize: '16px',
+                    transform: 'translateZ(0)'
+                  }}
                 />
                 <div className="absolute bottom-3 right-3">
                   <Button 
