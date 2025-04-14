@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ChevronDown, ChevronUp, ArrowUp, Copy, Check, Share, Sparkles, BookText, FileText, Menu } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, Copy, Check, Share, Sparkles, BookText, FileText, Menu, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useChat } from "ai/react";
@@ -16,6 +16,7 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { useSearchParams } from "next/navigation";
 
 interface Message {
   role: "user" | "assistant";
@@ -32,13 +33,15 @@ interface CodeProps {
 }
 
 export default function PlaygroundPage() {
-  const [model, setModel] = useState("deepseek:deepseek-reasoner");
+  const [model, setModel] = useState("openai:gpt-4o");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [expandedReasoning, setExpandedReasoning] = useState<number[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isShareLoading, setIsShareLoading] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isAutoProcessing, setIsAutoProcessing] = useState(false);
+  const [initialQueryProcessed, setInitialQueryProcessed] = useState(false);
 
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4000);
@@ -50,6 +53,7 @@ export default function PlaygroundPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
 
   const { messages, isLoading, input, handleInputChange, handleSubmit } = useChat({
     body: { model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, systemPrompt },
@@ -60,6 +64,35 @@ export default function PlaygroundPage() {
       }, 100);
     },
   });
+
+  // Handle auto-processing when coming from hero section
+  useEffect(() => {
+    // Only run this once when the component mounts
+    if (initialQueryProcessed) return;
+
+    const query = searchParams?.get('query');
+    const autoProcess = searchParams?.get('autoProcess') === 'true';
+
+    if (autoProcess && query && !input && !isLoading) {
+      setIsAutoProcessing(true);
+      setInitialQueryProcessed(true);
+      
+      // Set the input value
+      handleInputChange({ 
+        target: { value: query } 
+      } as React.ChangeEvent<HTMLTextAreaElement>);
+
+      // Submit after a small delay to ensure the input is set
+      setTimeout(() => {
+        if (formRef.current) {
+          formRef.current.dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+          );
+        }
+        setIsAutoProcessing(false);
+      }, 300);
+    }
+  }, [searchParams, initialQueryProcessed, input, isLoading]);
 
   // Scroll to bottom when messages change (except when input is focused)
   useEffect(() => {
@@ -386,7 +419,7 @@ export default function PlaygroundPage() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {isLoading && (
+                {(isLoading || isAutoProcessing) && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -425,10 +458,14 @@ export default function PlaygroundPage() {
                   <Button 
                     type="submit" 
                     size="sm" 
-                    disabled={isLoading || !input.trim()} 
+                    disabled={isLoading || !input.trim() || isAutoProcessing} 
                     className="h-8 bg-white hover:bg-zinc-200 text-black"
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    {isAutoProcessing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               </form>

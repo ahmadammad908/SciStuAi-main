@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, BookOpenText, Newspaper, BrainCircuit, Briefcase, Sparkles, Search } from "lucide-react";
+import { ArrowRight, BookOpenText, Newspaper, BrainCircuit, Briefcase, Sparkles, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { motion } from "framer-motion";
@@ -9,11 +9,17 @@ import { FormEvent, useState } from "react";
 export default function HeroSection() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = (e: FormEvent) => {
+  const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/playground?tab=homework&query=${encodeURIComponent(searchQuery)}`);
+      setIsLoading(true);
+      // Small delay to show loading state (you can remove this if not needed)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // Navigate to homework helper with the query and auto-process flag
+      router.push(`/playground?tab=homework&query=${encodeURIComponent(searchQuery)}&autoProcess=true`);
+      // Note: The loading state will reset when the component unmounts during navigation
     }
   };
 
@@ -103,14 +109,20 @@ export default function HeroSection() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Ask any question or paste your homework..."
               className="flex-1 bg-transparent outline-none px-2 py-4 text-gray-900 dark:text-white text-base"
+              disabled={isLoading}
             />
             <Button
               type="submit"
               size="lg"
               className="rounded-full bg-blue-600 hover:bg-blue-500 text-white p-3 h-12 w-12"
               aria-label="Solve Now"
+              disabled={isLoading}
             >
-              <ArrowRight className="h-5 w-5" />
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <ArrowRight className="h-5 w-5" />
+              )}
             </Button>
           </form>
         </motion.div>
