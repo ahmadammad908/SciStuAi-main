@@ -489,7 +489,6 @@ export default function PlaygroundPage() {
                     </SelectTrigger>
                     <SelectContent className="z-[100]">
                       <SelectItem value="openai:gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="openai:gpt-4">GPT-4</SelectItem>
                       <SelectItem value="openai:gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
                       <SelectItem value="openai:gpt-4-turbo">GPT-4 Turbo</SelectItem>
                       <SelectItem value="deepseek:deepseek-chat">DeepSeek Chat</SelectItem>
