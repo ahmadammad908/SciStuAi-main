@@ -76,10 +76,10 @@ export default function PlaygroundPage() {
     if (autoProcess && query && !input && !isLoading) {
       setIsAutoProcessing(true);
       setInitialQueryProcessed(true);
-      
+
       // Set the input value
-      handleInputChange({ 
-        target: { value: query } 
+      handleInputChange({
+        target: { value: query }
       } as React.ChangeEvent<HTMLTextAreaElement>);
 
       // Submit after a small delay to ensure the input is set
@@ -109,7 +109,7 @@ export default function PlaygroundPage() {
       setIsInputFocused(true);
       setTimeout(() => {
         if (textareaRef.current) {
-          textareaRef.current.scrollIntoView({ 
+          textareaRef.current.scrollIntoView({
             block: 'center',
             behavior: 'smooth'
           });
@@ -141,7 +141,7 @@ export default function PlaygroundPage() {
     const handleResize = () => {
       if (isInputFocused && textareaRef.current) {
         setTimeout(() => {
-          textareaRef.current?.scrollIntoView({ 
+          textareaRef.current?.scrollIntoView({
             block: 'center',
             behavior: 'smooth'
           });
@@ -183,12 +183,11 @@ export default function PlaygroundPage() {
     setIsShareLoading(true);
     try {
       const shareContent = messages.map(msg => {
-        return `${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.content}\n${
-          msg.reasoning ? `Reasoning: ${msg.reasoning}\n` : ''
-        }`;
+        return `${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.content}\n${msg.reasoning ? `Reasoning: ${msg.reasoning}\n` : ''
+          }`;
       }).join('\n');
 
-      const fullContent = systemPrompt 
+      const fullContent = systemPrompt
         ? `System Prompt: ${systemPrompt}\n\n${shareContent}`
         : shareContent;
 
@@ -292,9 +291,9 @@ export default function PlaygroundPage() {
         {/* Mobile Header */}
         <header className="lg:hidden flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden"
             >
@@ -304,9 +303,9 @@ export default function PlaygroundPage() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="h-8 w-8 p-0"
               onClick={handleShare}
               disabled={isShareLoading || messages.length === 0}
@@ -333,8 +332,8 @@ export default function PlaygroundPage() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleShare}
               disabled={isShareLoading || messages.length === 0}
@@ -394,6 +393,12 @@ export default function PlaygroundPage() {
                       className={`flex items-start gap-3 ${message.role === "assistant" ? "flex-row" : "flex-row-reverse"}`}
                     >
                       <div className="flex flex-col gap-2 max-w-[480px]">
+                        <div className={`flex items-center gap-2 ${message.role === "assistant" ? "justify-start" : "justify-end"}`}>
+                          <span className={`text-xs font-medium ${message.role === "assistant" ? "text-blue-500" : "text-green-500"}`}>
+                            {message.role === "assistant" ? "Assistant" : "You"}
+                          </span>
+                         
+                        </div>
                         {message.reasoning && (
                           <div className="rounded-[20px] px-3 py-2 dark:bg-[#1C1C1E] bg-[#E9E9EB]">
                             <button
@@ -455,10 +460,10 @@ export default function PlaygroundPage() {
                   }}
                 />
                 <div className="absolute bottom-3 right-3">
-                  <Button 
-                    type="submit" 
-                    size="sm" 
-                    disabled={isLoading || !input.trim() || isAutoProcessing} 
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isLoading || !input.trim() || isAutoProcessing}
                     className="h-8 bg-white hover:bg-zinc-200 text-black"
                   >
                     {isAutoProcessing ? (
@@ -542,3 +547,4 @@ export default function PlaygroundPage() {
     </div>
   );
 }
+
