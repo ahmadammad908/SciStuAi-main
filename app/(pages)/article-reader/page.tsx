@@ -8,7 +8,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BookText, FileText } from "lucide-react";
+import { Sparkles, BookText, FileText, Menu, X } from "lucide-react";
 
 import Link from "next/link";
 import ModeToggle from "@/components/mode-toggle";
@@ -48,12 +48,15 @@ interface PDFViewerProps {
 }
 
 const PDFViewer = ({ article, onCommentCreate }: PDFViewerProps) => {
+
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // NEW: Mobile menu state
+
 
   useEffect(() => {
     if (article.file) {
@@ -166,6 +169,8 @@ export default function ArticleReaderPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newComment, setNewComment] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // NEW: Mobile menu state
+
 
   const createFolder = () => {
     if (newFolderName.trim()) {
@@ -281,7 +286,7 @@ export default function ArticleReaderPage() {
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
       {/* Navigation Sidebar */}
-      <div className="lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
+      <div className="lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200 hidden md:block">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
             <Image
@@ -327,9 +332,33 @@ export default function ArticleReaderPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Navbar */}
-        <header className="flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
+        <header className="md:hidden flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden"
+            >
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              
+            </Button>
+            <h2 className="text-lg font-medium truncate w-full">Article Reader</h2>
+            <Badge variant="outline" className="text-xs truncate w-full">
+              PDF Viewer
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+              <Share className="w-4 h-4" />
+            </Button>
+          </div>
+        </header>
+        {/* Desktop Header */}
+        <header className="hidden lg:flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-medium capitalize">Article Reader</h2>
+            <h2 className="text-lg font-medium">Article Reader</h2>
             <Badge variant="outline" className="text-xs">
               PDF Viewer
             </Badge>
@@ -337,11 +366,44 @@ export default function ArticleReaderPage() {
           <div className="flex items-center gap-2">
             <ModeToggle />
             <Button variant="outline" size="sm">
-              <Share className="w-4 h-4 mr-2" />
-              Share
+              <Share className="w-4 h-4 mr-2" /> Share
             </Button>
           </div>
         </header>
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-white dark:bg-black border-b dark:border-zinc-800 border-zinc-200">
+            <div className="p-4 space-y-2">
+              <Link href="/homework-helper" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Homework Helper
+                </Button>
+              </Link>
+
+              <Link href="/article-reader" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="secondary" className="w-full justify-start gap-2">
+                  <BookText className="w-4 h-4" />
+                  Article Reader
+                </Button>
+              </Link>
+
+              <Link href="/humanize-ai" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Humanize AI
+                </Button>
+              </Link>
+
+              <Link href="/resume-analyzer" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <FileText className="w-4 h-4" />
+                  Resume Analyzer
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
 
         {/* Article Reader Content */}
         {selectedArticle ? (
@@ -418,15 +480,15 @@ export default function ArticleReaderPage() {
         ) : (
           <div className="flex-1 p-6">
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder="New folder name"
-                  className="flex-1 p-2 border rounded-lg"
+                  className="flex-1 min-w-0 p-2 border rounded-lg" // min-w-0 prevents overflow
                   onKeyDown={(e) => e.key === "Enter" && createFolder()}
                 />
-                <Button onClick={createFolder}>
+                <Button onClick={createFolder} className="sm:w-auto w-full">
                   Create Folder
                 </Button>
               </div>

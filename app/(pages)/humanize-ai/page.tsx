@@ -4,11 +4,10 @@
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
-
 import Link from "next/link";
 import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Share, Sparkles, Copy, BookText, FileText } from "lucide-react";
+import { Share, Sparkles, Copy, BookText, FileText, Menu, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 interface HumanizeResult {
@@ -29,6 +28,7 @@ export default function HumanizeAIPage() {
   const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [requests, setRequests] = useState<number[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const RATE_LIMIT = 5;
   const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -129,8 +129,14 @@ export default function HumanizeAIPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
-      {/* Navigation Sidebar */}
-      <div className="lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
+      {/* Mobile Menu Button */}
+
+
+      {/* Mobile Navigation Menu */}
+
+
+      {/* Desktop Navigation Sidebar */}
+      <div className="hidden lg:block lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
             <h1 className="text-lg font-semibold">ScistuAI</h1>
@@ -166,24 +172,66 @@ export default function HumanizeAIPage() {
         </div>
       </div>
 
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Navbar */}
         <header className="flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-medium capitalize">Humanize AI</h2>
-            <Badge variant="outline" className="text-xs">
+          <div className="flex items-center gap-3 ">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden block"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+            <h2 className="text-lg font-medium capitalize truncate w-full">Humanize AI</h2>
+            <Badge variant="outline" className="text-xs truncate w-full">
               Text Converter
             </Badge>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="outline" size="sm">
-              <Share className="w-4 h-4 mr-2" />
-              Share
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0 ">
+              <Share className="w-4 h-4" />
             </Button>
+            
           </div>
         </header>
+        {mobileMenuOpen && (
+          <div className="lg:hidden p-4 border-b dark:border-zinc-800 border-zinc-200 bg-white dark:bg-black">
+            <div className="space-y-2">
+              <Link href="/homework-helper" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Homework Helper
+                </Button>
+              </Link>
+
+              <Link href="/article-reader" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <BookText className="w-4 h-4" />
+                  Article Reader
+                </Button>
+              </Link>
+
+              <Link href="/humanize-ai" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="secondary" className="w-full justify-start gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Humanize AI
+                </Button>
+              </Link>
+
+              <Link href="/resume-analyzer" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <FileText className="w-4 h-4" />
+                  Resume Analyzer
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Humanize AI Content */}
         <div className="flex-1 p-6">
