@@ -1,4 +1,3 @@
-// app/(main)/humanize-ai/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Share, Sparkles, Copy, BookText, FileText, Menu, X } from "lucide-react";
+import { Share, Sparkles, Copy, BookText, FileText, Menu, X, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 interface HumanizeResult {
@@ -17,11 +16,6 @@ interface HumanizeResult {
   timestamp: Date;
 }
 
-interface HumanizeResponse {
-  result?: string;
-  error?: string;
-}
-
 export default function HumanizeAIPage() {
   const [humanizeText, setHumanizeText] = useState<string>("");
   const [humanizedResults, setHumanizedResults] = useState<HumanizeResult[]>([]);
@@ -29,9 +23,23 @@ export default function HumanizeAIPage() {
   const [error, setError] = useState<string>("");
   const [requests, setRequests] = useState<number[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [streamedText, setStreamedText] = useState<string>("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewCopied, setPreviewCopied] = useState(false);
 
   const RATE_LIMIT = 5;
   const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+
+  const handleCopy = (text: string, id?: string) => {
+    navigator.clipboard.writeText(text);
+    if (id) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } else {
+      setPreviewCopied(true);
+      setTimeout(() => setPreviewCopied(false), 2000);
+    }
+  };
 
   const handleHumanize = async () => {
     if (!humanizeText.trim()) return;
@@ -39,8 +47,9 @@ export default function HumanizeAIPage() {
     try {
       setIsHumanizing(true);
       setError("");
+      setStreamedText("");
 
-      // Client-side rate limiting
+      // Rate limiting
       const now = Date.now();
       const recentRequests = requests.filter(ts => ts > now - RATE_LIMIT_WINDOW);
       if (recentRequests.length >= RATE_LIMIT) {
@@ -55,44 +64,59 @@ export default function HumanizeAIPage() {
         body: JSON.stringify({ text: humanizeText }),
       });
 
-      const data = await response.json() as HumanizeResponse;
+      if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+      if (!response.body) throw new Error("No response body");
 
-      if (!response.ok || "error" in data) {
-        throw new Error(data.error || "Request failed");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let resultText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        resultText += chunk;
+        setStreamedText(resultText);
       }
 
       setHumanizedResults(prev => [{
         id: uuidv4(),
         originalText: humanizeText,
-        humanizedText: data.result!,
+        humanizedText: resultText,
         timestamp: new Date()
       }, ...prev]);
 
       setHumanizeText("");
-      setRequests(prev => [...prev, Date.now()]);
+      setRequests(prev => [...prev, now]);
 
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to humanize text";
-      setError(errorMessage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to humanize text");
     } finally {
       setIsHumanizing(false);
     }
   };
 
-  const HumanizedPreview = ({ result }: { result: HumanizeResult }) => (
-    <div className="relative border rounded-lg p-4 bg-white dark:bg-zinc-900">
-      <div className="text-sm whitespace-pre-wrap mb-4">
-        {result.humanizedText}
+  const HumanizedPreview = ({ result }: { result?: HumanizeResult }) => (
+    <div className="relative border rounded-lg p-4 bg-white dark:bg-zinc-900 h-64">
+      <div className="text-sm whitespace-pre-wrap h-full overflow-y-auto pr-2">
+        {result ? result.humanizedText : streamedText || "Humanized text will appear here"}
       </div>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => navigator.clipboard.writeText(result.humanizedText)}
-        className="absolute top-2 right-2"
-      >
-        <Copy className="w-4 h-4 mr-2" />
-        Copy
-      </Button>
+      {(result || streamedText) && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleCopy(result?.humanizedText || streamedText || "")}
+          className="absolute top-2 right-2"
+        >
+          {previewCopied ? (
+            <Check className="w-4 h-4 mr-2 text-green-500" />
+          ) : (
+            <Copy className="w-4 h-4 mr-2" />
+          )}
+          {previewCopied ? "Copied!" : "Copy"}
+        </Button>
+      )}
     </div>
   );
 
@@ -116,9 +140,13 @@ export default function HumanizeAIPage() {
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => navigator.clipboard.writeText(result.humanizedText)}
+          onClick={() => handleCopy(result.humanizedText, result.id)}
         >
-          <Copy className="w-4 h-4" />
+          {copiedId === result.id ? (
+            <Check className="w-4 h-4 text-green-500" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
         </Button>
       </div>
       <div className="text-xs text-zinc-400 mt-2">
@@ -129,12 +157,6 @@ export default function HumanizeAIPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
-      {/* Mobile Menu Button */}
-
-
-      {/* Mobile Navigation Menu */}
-
-
       {/* Desktop Navigation Sidebar */}
       <div className="hidden lg:block lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
@@ -172,12 +194,11 @@ export default function HumanizeAIPage() {
         </div>
       </div>
 
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Navbar */}
         <header className="flex items-center justify-between p-4 border-b dark:border-zinc-800 border-zinc-200">
-          <div className="flex items-center gap-3 ">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -186,19 +207,19 @@ export default function HumanizeAIPage() {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <h2 className="text-lg font-medium capitalize truncate w-full">Humanize AI</h2>
-            <Badge variant="outline" className="text-xs truncate w-full">
+            <h2 className="text-lg font-medium capitalize truncate">Humanize AI</h2>
+            <Badge variant="outline" className="text-xs truncate">
               Text Converter
             </Badge>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0 ">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
               <Share className="w-4 h-4" />
             </Button>
-            
           </div>
         </header>
+
         {mobileMenuOpen && (
           <div className="lg:hidden p-4 border-b dark:border-zinc-800 border-zinc-200 bg-white dark:bg-black">
             <div className="space-y-2">
@@ -234,7 +255,7 @@ export default function HumanizeAIPage() {
         )}
 
         {/* Humanize AI Content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl mx-auto space-y-6">
             {error && (
               <div className="bg-red-100 dark:bg-red-900 p-3 rounded-lg text-red-700 dark:text-red-200">
@@ -268,9 +289,7 @@ export default function HumanizeAIPage() {
 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Humanized Version</h3>
-                {humanizedResults[0] && (
-                  <HumanizedPreview result={humanizedResults[0]} />
-                )}
+                <HumanizedPreview result={humanizedResults[0]} />
               </div>
             </div>
 
