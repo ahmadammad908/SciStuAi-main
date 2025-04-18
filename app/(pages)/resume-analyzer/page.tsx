@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Head from "next/head";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ModeToggle from "@/components/mode-toggle";
 import { Share, FileText, Sparkles, BookText, Menu, X, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import '@/styles/page.css'
 
 export default function ResumeAnalyzerPage() {
   const [resumeText, setResumeText] = useState("");
@@ -19,17 +21,17 @@ export default function ResumeAnalyzerPage() {
   const extractTextFromPdf = async (file: File) => {
     const pdfjsLib = await import("pdfjs-dist");
     pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
     let text = "";
-    
+
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       text += content.items.map((item: any) => item.str).join(" ") + "\n";
     }
-    
+
     return text;
   };
 
@@ -38,16 +40,16 @@ export default function ResumeAnalyzerPage() {
     if (!file) return;
 
     setFileName(file.name);
-    
+
     try {
       let text = "";
-      
+
       if (file.type === "application/pdf") {
         text = await extractTextFromPdf(file);
       } else {
         text = await file.text();
       }
-      
+
       setResumeText(text);
       toast.success("Resume uploaded successfully");
     } catch (error) {
@@ -64,10 +66,10 @@ export default function ResumeAnalyzerPage() {
 
     setIsAnalyzing(true);
     setAnalysis("");
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       const mockAnalysis = generateMockAnalysis(resumeText);
       setAnalysis(mockAnalysis);
       toast.success("Analysis complete");
@@ -85,16 +87,16 @@ export default function ResumeAnalyzerPage() {
     const hasEducation = /(education|degree|school)/i.test(text);
     const hasExperience = /(experience|work|job)/i.test(text);
     const hasSkills = /(skills|technical|programming)/i.test(text);
-    
+
     const skillsList = [
-      "JavaScript", "React", "Node.js", "Python", "Java", 
+      "JavaScript", "React", "Node.js", "Python", "Java",
       "SQL", "Git", "AWS", "HTML/CSS", "TypeScript"
     ];
-    
-    const detectedSkills = skillsList.filter(skill => 
+
+    const detectedSkills = skillsList.filter(skill =>
       new RegExp(skill, "i").test(text)
     );
-    
+
     return `
     📄 Resume Analysis Report
     -------------------------
@@ -108,9 +110,9 @@ export default function ResumeAnalyzerPage() {
       ${hasSkills ? "✓ Skills Section" : "⚠ Missing Skills Section"}
     
     💻 Technical Skills Found:
-    ${detectedSkills.length > 0 
-      ? detectedSkills.map(skill => `    • ${skill}`).join("\n")
-      : "    No specific technical skills detected"}
+    ${detectedSkills.length > 0
+        ? detectedSkills.map(skill => `    • ${skill}`).join("\n")
+        : "    No specific technical skills detected"}
     
     ⚡ Recommendations:
     1. ${wordCount < 300 ? "Consider adding more details" : "Good length"}
@@ -130,7 +132,11 @@ export default function ResumeAnalyzerPage() {
   };
 
   return (
+
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-black">
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
       {/* Navigation Sidebar - Desktop */}
       <div className="lg:w-64 border-r hidden lg:block dark:border-zinc-800 bg-gray-100 dark:bg-black">
         <div className="p-4 space-y-2">
@@ -185,9 +191,9 @@ export default function ResumeAnalyzerPage() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={copyToClipboard}
               disabled={!analysis}
             >
@@ -246,14 +252,14 @@ export default function ResumeAnalyzerPage() {
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <Button 
+                  <Button
                     onClick={() => fileInputRef.current?.click()}
                     className="flex-1 sm:flex-none"
                   >
                     Upload Resume
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setResumeText("");
                       setFileName("");
@@ -282,16 +288,20 @@ export default function ResumeAnalyzerPage() {
                     onChange={(e) => setResumeText(e.target.value)}
                     placeholder="Paste your resume text here or upload a file..."
                     className="h-64"
+                    style={{
+                      fontSize: '16px', // Important for mobile
+                      transform: 'scale(1)',
+                    }}
                   />
                 </div>
-                
+
                 {/* Analysis Results */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Analysis Results</h3>
                     {analysis && (
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={copyToClipboard}
                       >
@@ -310,8 +320,8 @@ export default function ResumeAnalyzerPage() {
                       </div>
                     ) : (
                       <div className="text-zinc-400 h-full flex items-center justify-center text-center p-4">
-                        {resumeText 
-                          ? "Click 'Analyze Resume' to get feedback" 
+                        {resumeText
+                          ? "Click 'Analyze Resume' to get feedback"
                           : "Analysis results will appear here"}
                       </div>
                     )}
@@ -357,7 +367,7 @@ export default function ResumeAnalyzerPage() {
                     content: "Use consistent formatting, clear headings, and plenty of white space for readability."
                   }
                 ].map((tip, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                   >
