@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
+import Head from "next/head";
 import Link from "next/link";
 import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Share, Sparkles, Copy, BookText, FileText, Menu, X, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-
+import '@/styles/page.css'
 interface HumanizeResult {
   id: string;
   originalText: string;
@@ -100,9 +101,19 @@ export default function HumanizeAIPage() {
   const HumanizedPreview = ({ result }: { result?: HumanizeResult }) => (
     <div className="relative border rounded-lg p-4 bg-white dark:bg-zinc-900 h-64">
       <div className="text-sm whitespace-pre-wrap h-full overflow-y-auto pr-2">
-        {result ? result.humanizedText : streamedText || "Humanized text will appear here"}
+        {isHumanizing ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-pulse flex flex-col items-center">
+              <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Humanizing your text...</p>
+            </div>
+          </div>
+        ) : result ? result.humanizedText : streamedText || "Humanized text will appear here"}
       </div>
-      {(result || streamedText) && (
+      {(result || streamedText) && !isHumanizing && (
         <Button
           size="sm"
           variant="outline"
@@ -158,6 +169,9 @@ export default function HumanizeAIPage() {
   return (
     <div className="flex flex-col lg:flex-row h-screen dark:bg-black bg-white dark:text-white text-black">
       {/* Desktop Navigation Sidebar */}
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
       <div className="hidden lg:block lg:w-64 border-b lg:border-b-0 lg:border-r dark:border-zinc-800 border-zinc-200">
         <div className="p-4 space-y-2">
           <Link href="/" className="flex items-center gap-2 mb-6">
@@ -270,20 +284,23 @@ export default function HumanizeAIPage() {
                   value={humanizeText}
                   onChange={(e) => setHumanizeText(e.target.value)}
                   placeholder="Paste your AI-generated text here..."
-                  className="h-64"
+                  className="h-64 text-base" // Add text-base here
+                  disabled={isHumanizing}
                 />
                 <Button
                   onClick={handleHumanize}
                   disabled={isHumanizing || !humanizeText.trim()}
                   className="w-full"
                 >
-                  {isHumanizing ? "Humanizing..." : "Humanize Text"}
-                  {isHumanizing && (
-                    <svg className="animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  )}
+                  {isHumanizing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : "Humanize Text"}
                 </Button>
               </div>
 
