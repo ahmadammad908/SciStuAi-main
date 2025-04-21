@@ -8,53 +8,67 @@ import ModeToggle from "@/components/mode-toggle";
 import { Share, FileText, Sparkles, BookText, Menu, X, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import '@/styles/page.css'
+import AnalysisReport from "@/app/(pages)/resume-analyzer/Analysis Report";
+
+import '@/styles/page.css';
 
 export default function ResumeAnalyzerPage() {
   const [resumeText, setResumeText] = useState("");
-  const [analysis, setAnalysis] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [fileName, setFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const extractTextFromPdf = async (file: File) => {
-    const pdfjsLib = await import("pdfjs-dist");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
     let text = "";
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map((item: any) => item.str).join(" ") + "\n";
-    }
+    
 
     return text;
+  };
+
+  const extractTextFromDocx = async (file: File) => {
+    const mammoth = await import("mammoth");
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check file extension
+    const validExtensions = [ '.docx', '.txt'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      toast.error("Please upload only  DOCX, or TXT files");
+      return;
+    }
+
     setFileName(file.name);
+    setIsAnalyzing(true);
+    setShowAnalysis(false);
 
     try {
       let text = "";
 
-      if (file.type === "application/pdf") {
-        text = await extractTextFromPdf(file);
-      } else {
+      if (fileExtension === '.docx') {
+        text = await  extractTextFromDocx(file);
+      } else if (fileExtension === '.txt') {
         text = await file.text();
       }
 
       setResumeText(text);
       toast.success("Resume uploaded successfully");
     } catch (error) {
-      toast.error("Failed to parse file");
-      console.error(error);
+      toast.error("Failed to parse file. Please try another format.");
+      console.error("File parsing error:", error);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -65,78 +79,33 @@ export default function ResumeAnalyzerPage() {
     }
 
     setIsAnalyzing(true);
-    setAnalysis("");
+    setShowAnalysis(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const mockAnalysis = generateMockAnalysis(resumeText);
-      setAnalysis(mockAnalysis);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       toast.success("Analysis complete");
     } catch (error) {
-      toast.error("Analysis failed");
-      console.error(error);
+      toast.error("Analysis failed. Please try again.");
+      console.error("Analysis error:", error);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const generateMockAnalysis = (text: string) => {
-    const wordCount = text.split(/\s+/).length;
-    const hasContactInfo = /(email|phone|contact)/i.test(text);
-    const hasEducation = /(education|degree|school)/i.test(text);
-    const hasExperience = /(experience|work|job)/i.test(text);
-    const hasSkills = /(skills|technical|programming)/i.test(text);
-
-    const skillsList = [
-      "JavaScript", "React", "Node.js", "Python", "Java",
-      "SQL", "Git", "AWS", "HTML/CSS", "TypeScript"
-    ];
-
-    const detectedSkills = skillsList.filter(skill =>
-      new RegExp(skill, "i").test(text)
-    );
-
-    return `
-    📄 Resume Analysis Report
-    -------------------------
-    
-    🔍 Basic Metrics:
-    - Word Count: ${wordCount} words
-    - Sections Detected:
-      ${hasContactInfo ? "✓ Contact Information" : "⚠ Missing Contact Info"}
-      ${hasEducation ? "✓ Education" : "⚠ Missing Education Section"}
-      ${hasExperience ? "✓ Work Experience" : "⚠ Missing Experience Section"}
-      ${hasSkills ? "✓ Skills Section" : "⚠ Missing Skills Section"}
-    
-    💻 Technical Skills Found:
-    ${detectedSkills.length > 0
-        ? detectedSkills.map(skill => `    • ${skill}`).join("\n")
-        : "    No specific technical skills detected"}
-    
-    ⚡ Recommendations:
-    1. ${wordCount < 300 ? "Consider adding more details" : "Good length"}
-    2. ${!hasContactInfo ? "Add contact information" : "Contact info looks good"}
-    3. ${detectedSkills.length < 3 ? "Highlight more technical skills" : "Good technical skills coverage"}
-    4. Use more action verbs (developed, implemented, optimized)
-    5. Quantify achievements where possible (e.g., "Increased performance by 30%")
-    
-    📈 Overall Score: ${Math.min(100, 70 + detectedSkills.length * 3 + wordCount / 10)}/100
-    `;
-  };
-
   const copyToClipboard = () => {
-    if (!analysis) return;
-    navigator.clipboard.writeText(analysis);
-    toast.success("Analysis copied to clipboard");
+    if (!resumeText) return;
+    navigator.clipboard.writeText(resumeText);
+    toast.success("Resume text copied to clipboard");
   };
 
   return (
-
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-black">
       <Head>
+        <title>Resume Analyzer | ResumeAI</title>
+        <meta name="description" content="Analyze and improve your resume with AI-powered tools" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Head>
+      
       {/* Navigation Sidebar - Desktop */}
       <div className="lg:w-64 border-r hidden lg:block dark:border-zinc-800 bg-gray-100 dark:bg-black">
         <div className="p-4 space-y-2">
@@ -195,7 +164,7 @@ export default function ResumeAnalyzerPage() {
               variant="outline"
               size="sm"
               onClick={copyToClipboard}
-              disabled={!analysis}
+              disabled={!resumeText}
             >
               <Share className="w-4 h-4 mr-2" />
               Share
@@ -248,28 +217,31 @@ export default function ResumeAnalyzerPage() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    accept=".txt,.pdf,.doc,.docx"
+                    accept=".docx,.txt"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
                   <Button
                     onClick={() => fileInputRef.current?.click()}
                     className="flex-1 sm:flex-none"
+                    disabled={isAnalyzing}
                   >
-                    Upload Resume
+                    {isAnalyzing ? "Processing..." : "Upload Resume"}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => {
                       setResumeText("");
                       setFileName("");
+                      setShowAnalysis(false);
                     }}
+                    disabled={isAnalyzing}
                   >
                     Clear
                   </Button>
                 </div>
                 <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {fileName || "No file selected (supports PDF, DOC, TXT)"}
+                  {fileName || "Supports  DOCX, TXT formats only"}
                 </span>
               </div>
 
@@ -285,13 +257,13 @@ export default function ResumeAnalyzerPage() {
                   </div>
                   <Textarea
                     value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Paste your resume text here or upload a file..."
-                    className="h-64"
-                    style={{
-                      fontSize: '16px', // Important for mobile
-                      transform: 'scale(1)',
+                    onChange={(e) => {
+                      setResumeText(e.target.value);
+                      setShowAnalysis(false);
                     }}
+                    placeholder="Paste your resume text here or upload a file..."
+                    className="h-64 resize-none"
+                    disabled={isAnalyzing}
                   />
                 </div>
 
@@ -299,7 +271,7 @@ export default function ResumeAnalyzerPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Analysis Results</h3>
-                    {analysis && (
+                    {resumeText && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -309,20 +281,19 @@ export default function ResumeAnalyzerPage() {
                       </Button>
                     )}
                   </div>
-                  <div className="border rounded-lg p-4 h-64 overflow-y-auto bg-zinc-50 dark:bg-zinc-900 whitespace-pre-wrap">
+                  <div className="border rounded-lg p-4 h-64 overflow-y-auto bg-zinc-50 dark:bg-zinc-900">
                     {isAnalyzing ? (
                       <div className="flex items-center justify-center h-full">
                         <Loader2 className="animate-spin h-8 w-8 text-zinc-400" />
+                        <span className="ml-2">Analyzing your resume...</span>
                       </div>
-                    ) : analysis ? (
-                      <div className="text-sm">
-                        {analysis}
-                      </div>
+                    ) : showAnalysis && resumeText ? (
+                      <AnalysisReport text={resumeText} />
                     ) : (
                       <div className="text-zinc-400 h-full flex items-center justify-center text-center p-4">
                         {resumeText
-                          ? "Click 'Analyze Resume' to get feedback"
-                          : "Analysis results will appear here"}
+                          ? "Click 'Analyze Resume' to get detailed feedback"
+                          : "Upload or paste your resume to begin analysis"}
                       </div>
                     )}
                   </div>
@@ -341,7 +312,9 @@ export default function ResumeAnalyzerPage() {
                     <Loader2 className="animate-spin mr-2 h-4 w-4" />
                     Analyzing...
                   </>
-                ) : "Analyze Resume"}
+                ) : (
+                  "Analyze Resume"
+                )}
               </Button>
             </div>
 
@@ -351,20 +324,36 @@ export default function ResumeAnalyzerPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   {
-                    title: "Action Verbs",
-                    content: "Start bullet points with strong verbs like 'Developed', 'Led', 'Implemented' to showcase impact."
+                    title: "ATS Optimization",
+                    content: "Use standard headings (Experience, Education) and avoid graphics/tables that confuse ATS systems."
                   },
                   {
-                    title: "Quantify Results",
-                    content: "Include metrics like 'Increased sales by 30%' or 'Reduced costs by $50K' to demonstrate achievements."
+                    title: "Achievement Focus",
+                    content: "Highlight accomplishments with metrics (e.g., 'Increased sales by 40% in Q3 2023') rather than just responsibilities."
                   },
                   {
-                    title: "Keyword Optimization",
-                    content: "Include keywords from the job description to pass ATS systems and catch recruiter attention."
+                    title: "Keyword Matching",
+                    content: "Mirror language from the job description to increase your resume's relevance score in ATS systems."
                   },
                   {
-                    title: "Clean Formatting",
-                    content: "Use consistent formatting, clear headings, and plenty of white space for readability."
+                    title: "Professional Format",
+                    content: "Use a clean, readable font (10-12pt), consistent spacing, and bullet points for easy scanning."
+                  },
+                  {
+                    title: "Tailored Content",
+                    content: "Customize your resume for each application by prioritizing relevant experience and skills."
+                  },
+                  {
+                    title: "Error-Free Writing",
+                    content: "Proofread meticulously and consider using tools like Grammarly to catch errors."
+                  },
+                  {
+                    title: "Contact Information",
+                    content: "Include professional email, phone, and LinkedIn profile (if relevant) at the top of your resume."
+                  },
+                  {
+                    title: "Recent Experience First",
+                    content: "List your work history in reverse chronological order, with the most recent position first."
                   }
                 ].map((tip, index) => (
                   <div
