@@ -20,14 +20,7 @@ export default function ResumeAnalyzerPage() {
   const [fileName, setFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const extractTextFromPdf = async (file: File) => {
-
-    let text = "";
-
-    
-
-    return text;
-  };
+  
 
   const extractTextFromDocx = async (file: File) => {
     const mammoth = await import("mammoth");
