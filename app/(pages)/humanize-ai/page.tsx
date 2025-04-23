@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Share, Sparkles, Copy, BookText, FileText, Menu, X, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import '@/styles/page.css'
+
 interface HumanizeResult {
   id: string;
   originalText: string;
@@ -95,41 +96,71 @@ export default function HumanizeAIPage() {
       setError(err instanceof Error ? err.message : "Failed to humanize text");
     } finally {
       setIsHumanizing(false);
+      console.log("Humainxed text processing" ,streamedText)
     }
   };
 
-  const HumanizedPreview = ({ result }: { result?: HumanizeResult }) => (
-    <div className="relative border rounded-lg p-4 bg-white dark:bg-zinc-900 h-64">
-      <div className="text-sm whitespace-pre-wrap h-full overflow-y-auto pr-2">
-        {isHumanizing ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-pulse flex flex-col items-center">
-              <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Humanizing your text...</p>
-            </div>
-          </div>
-        ) : result ? result.humanizedText : streamedText || "Humanized text will appear here"}
+  const formatHumanizedText = (text: string) => {
+    if (!text) return text;
+    
+    // Process markdown formatting
+    let formattedText = text
+      // Headings
+      .replace(/^#\s(.+)$/gm, '<h1 style="color: #ef4444; font-size: 1.5em; font-weight: bold; margin: 1em 0 0.5em;">$1</h1>')
+      .replace(/^##\s(.+)$/gm, '<h2 style="color: #10b981; font-size: 1.3em; font-weight: bold; margin: 1em 0 0.5em;">$1</h2>')
+      .replace(/^###\s(.+)$/gm, '<h3 style="color: #3b82f6; font-size: 1.1em; font-weight: bold; margin: 1em 0 0.5em;">$1</h3>')
+      // Bold and italic
+      .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: bold;">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em style="font-style: italic;">$1</em>')
+      // Lists
+      .replace(/^\-\s(.+)$/gm, '<li style="margin-left: 1.5em; list-style-type: disc;">$1</li>')
+      .replace(/^\d+\.\s(.+)$/gm, '<li style="margin-left: 1.5em; list-style-type: decimal;">$1</li>')
+      // Paragraphs and line breaks
+      .replace(/\n\n/g, '</p><p style="margin-bottom: 1em; line-height: 1.6;">')
+      .replace(/\n/g, '<br>')
+      // Links
+      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color: #3b82f6; text-decoration: underline;" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Blockquotes
+      .replace(/^>\s(.+)$/gm, '<blockquote style="border-left: 3px solid #ddd; padding-left: 1em; margin-left: 0; color: #666;">$1</blockquote>');
+
+    // Wrap the whole content in a paragraph if it's not already wrapped
+    if (!formattedText.includes('<h1') && !formattedText.includes('<h2') && !formattedText.includes('<h3') && 
+        !formattedText.includes('<p>') && !formattedText.includes('<li>') && !formattedText.includes('<blockquote>')) {
+      formattedText = `<p style="margin-bottom: 1em; line-height: 1.6;">${formattedText}</p>`;
+    }
+
+    return formattedText;
+  };
+
+  const HumanizedPreview = ({ result }: { result?: HumanizeResult }) => {
+    const formattedText = result ? formatHumanizedText(result.humanizedText) : 
+                               streamedText ? formatHumanizedText(streamedText) : 
+                               '<p style="color: #6b7280;">Humanized text will appear here</p>';
+
+    return (
+      <div className="relative border rounded-lg p-4 bg-white dark:bg-zinc-900 h-64">
+        <div 
+          className="text-sm whitespace-pre-wrap h-full overflow-y-auto pr-2 styled-text"
+          dangerouslySetInnerHTML={{ __html: formattedText }}
+        />
+        {(result || streamedText) && !isHumanizing && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleCopy(result?.humanizedText || streamedText || "")}
+            className="absolute top-2 right-2"
+          >
+            {previewCopied ? (
+              <Check className="w-4 h-4 mr-2 text-green-500" />
+            ) : (
+              <Copy className="w-4 h-4 mr-2" />
+            )}
+            {previewCopied ? "Copied!" : "Copy"}
+          </Button>
+        )}
       </div>
-      {(result || streamedText) && !isHumanizing && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleCopy(result?.humanizedText || streamedText || "")}
-          className="absolute top-2 right-2"
-        >
-          {previewCopied ? (
-            <Check className="w-4 h-4 mr-2 text-green-500" />
-          ) : (
-            <Copy className="w-4 h-4 mr-2" />
-          )}
-          {previewCopied ? "Copied!" : "Copy"}
-        </Button>
-      )}
-    </div>
-  );
+    );
+  };
 
   const HistoryItem = ({ result }: { result: HumanizeResult }) => (
     <div className="group relative border rounded-lg p-4 bg-zinc-50 dark:bg-zinc-800">
@@ -142,9 +173,10 @@ export default function HumanizeAIPage() {
         </div>
         <div>
           <h4 className="text-sm font-medium mb-2">Humanized</h4>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300 line-clamp-3">
-            {result.humanizedText}
-          </p>
+          <div 
+            className="text-sm text-zinc-600 dark:text-zinc-300 line-clamp-3 styled-text"
+            dangerouslySetInnerHTML={{ __html: formatHumanizedText(result.humanizedText) }}
+          />
         </div>
       </div>
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -284,7 +316,7 @@ export default function HumanizeAIPage() {
                   value={humanizeText}
                   onChange={(e) => setHumanizeText(e.target.value)}
                   placeholder="Paste your AI-generated text here..."
-                  className="h-64 text-base" // Add text-base here
+                  className="h-64 text-base"
                   disabled={isHumanizing}
                 />
                 <Button
