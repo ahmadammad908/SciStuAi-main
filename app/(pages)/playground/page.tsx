@@ -1,51 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "use client";
 import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -256,7 +209,6 @@ export default function PlaygroundPage() {
         // Add both user and assistant messages at once
         await append({
           role: 'user',
-          content: input || "Analyze this image",
           imageUrl: imagePreview
         } as CustomMessage);
   
@@ -569,7 +521,7 @@ export default function PlaygroundPage() {
                   >
                     <Sparkles className="w-4 h-4" />
                     <span className="animate-pulse">
-                      {isImageUploading ? "Uploading Image..." : "Thinking..."}
+                      {isImageUploading ? "Analyzing the image  ..." : "Thinking..."}
                     </span>
                   </motion.div>
                 )}
