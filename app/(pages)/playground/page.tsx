@@ -231,7 +231,7 @@ export default function PlaygroundPage() {
       await append({
         content: input || "Analyze this image",
         imageUrl: imagePreview || undefined,
-        role:"user"
+        role: "user"
       } as CustomMessage);
 
       setIsImageUploading(true);
@@ -546,7 +546,7 @@ export default function PlaygroundPage() {
                             )}
                           </div>
                         )}
-                        
+
                         {message.content && (
                           <div className="rounded-[20px] px-3 py-2 dark:bg-[#1C1C1E] bg-[#E9E9EB]">
                             <ReactMarkdown components={components}>{message.content}</ReactMarkdown>
@@ -576,7 +576,7 @@ export default function PlaygroundPage() {
 
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
               <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
-                                <div className="relative">
+                <div className="relative">
                   <Textarea
                     ref={textareaRef}
                     value={input}
@@ -592,15 +592,14 @@ export default function PlaygroundPage() {
                     placeholder="Ask your homework question or upload an image..."
                     className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20"
                   />
-
-                  <div className="absolute bottom-2 right-2 flex gap-1">
+                  <div className="absolute bottom-2 right-2 flex gap-2"> {/* Changed gap-1 to gap-2 */}
                     <input
                       type="file"
                       ref={fileInputRef}
                       onChange={handleImageUpload}
                       accept="image/*"
                       id="image-upload"
-                      className="opacity-0 absolute w-8 h-8" // Make it invisible but clickable
+                      className="opacity-0 absolute w-8 h-8"
                     />
                     <label
                       htmlFor="image-upload"
@@ -614,7 +613,7 @@ export default function PlaygroundPage() {
                       type="submit"
                       size="sm"
                       disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
-                      className="h-8 bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white"
+                      className="h-8 w-8 p-0 bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white" // Added w-8 p-0 to make it square
                     >
                       {isAutoProcessing || isImageUploading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -623,6 +622,9 @@ export default function PlaygroundPage() {
                       )}
                     </Button>
                   </div>
+
+
+
                 </div>
               </form>
             </div>
