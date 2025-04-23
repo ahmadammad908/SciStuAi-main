@@ -225,41 +225,46 @@ export default function PlaygroundPage() {
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    removeImage();
-    if (imageFile) {
-      // First add the user message with image immediately
-      await append({
-        content: input || "Analyze this image",
-        imageUrl: imagePreview || undefined,
-        role: "user"
-      } as CustomMessage);
-
+    
+    // Don't proceed if already processing
+    if (isLoading || isImageUploading) return;
+  
+    if (imageFile && imagePreview) {
       setIsImageUploading(true);
-      const formData = new FormData();
-      formData.append('image', imageFile);
-      formData.append('prompt', input || "Analyze this image");
-      formData.append('model', model);
-      if (systemPrompt) formData.append('systemPrompt', systemPrompt);
-
+      
       try {
+        // Create form data for image upload
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('prompt', input || "Analyze this image");
+        formData.append('model', model);
+        if (systemPrompt) formData.append('systemPrompt', systemPrompt);
+  
+        // Add user message only after API call succeeds
         const response = await fetch('/api/chat', {
           method: 'POST',
           body: formData,
         });
-
+  
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to analyze image');
         }
-
+  
         const result = await response.json();
-
-        // Add AI response
+  
+        // Add both user and assistant messages at once
+        await append({
+          role: 'user',
+          content: input || "Analyze this image",
+          imageUrl: imagePreview
+        } as CustomMessage);
+  
         await append({
           role: 'assistant',
           content: result.text
         } as CustomMessage);
-
+  
       } catch (error) {
         console.error('Error analyzing image:', error);
         await append({
@@ -274,17 +279,16 @@ export default function PlaygroundPage() {
       // Regular text chat
       await handleSubmit(e);
     }
-
+  
     // Clear input after submission
     handleInputChange({
       target: { value: '' }
     } as React.ChangeEvent<HTMLTextAreaElement>);
-
+  
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   // ... (rest of the component remains the same)
   const toggleReasoning = (index: number) => {
     setExpandedReasoning((prev) =>
@@ -565,7 +569,7 @@ export default function PlaygroundPage() {
                   >
                     <Sparkles className="w-4 h-4" />
                     <span className="animate-pulse">
-                      {isImageUploading ? "Analyzing image..." : "Thinking..."}
+                      {isImageUploading ? "Uploading Image..." : "Thinking..."}
                     </span>
                   </motion.div>
                 )}
@@ -608,12 +612,11 @@ export default function PlaygroundPage() {
                     >
                       <ImageIcon className="w-4 h-4" />
                     </label>
-
-                    <Button
+                    
+                  <Button
                       type="submit"
                       size="sm"
                       disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
-                      className="h-8 w-8 p-0 bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white" // Added w-8 p-0 to make it square
                     >
                       {isAutoProcessing || isImageUploading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -621,7 +624,9 @@ export default function PlaygroundPage() {
                         <ArrowUp className="w-4 h-4" />
                       )}
                     </Button>
+
                   </div>
+                  
 
 
 
