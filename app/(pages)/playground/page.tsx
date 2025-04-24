@@ -23,7 +23,7 @@ interface CustomMessage {
   role: "data" | "system" | "user" | "assistant";
   content: string;
   reasoning?: string;
-  timestamp?: Date;  
+  timestamp?: Date;
   imageUrl?: string;
 }
 
@@ -178,13 +178,13 @@ export default function PlaygroundPage() {
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Don't proceed if already processing
     if (isLoading || isImageUploading) return;
-  
+
     if (imageFile && imagePreview) {
       setIsImageUploading(true);
-      
+
       try {
         // Create form data for image upload
         const formData = new FormData();
@@ -192,32 +192,32 @@ export default function PlaygroundPage() {
         formData.append('prompt', input || "Analyze this image");
         formData.append('model', model);
         if (systemPrompt) formData.append('systemPrompt', systemPrompt);
-  
+
         // Add user message first
         await append({
-          role:"user",
+          role: "user",
           content: input || "Analyze the image",
           imageUrl: imagePreview
         } as CustomMessage);
-  
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           body: formData,
         });
-  
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to analyze image');
         }
-  
+
         const result = await response.json();
-  
+
         // Add assistant response
         await append({
           role: 'assistant',
           content: result.text
         } as CustomMessage);
-  
+
       } catch (error) {
         console.error('Error analyzing image:', error);
         await append({
@@ -232,7 +232,7 @@ export default function PlaygroundPage() {
       // Regular text chat - use the existing handleSubmit
       try {
         // First add the user message
-      
+
         // Then let handleSubmit do its work to get the assistant response
         await handleSubmit(e);
       } catch (error) {
@@ -243,12 +243,12 @@ export default function PlaygroundPage() {
         } as CustomMessage);
       }
     }
-  
+
     // Clear input after submission
     handleInputChange({
       target: { value: '' }
     } as React.ChangeEvent<HTMLTextAreaElement>);
-  
+
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
@@ -560,37 +560,44 @@ export default function PlaygroundPage() {
                     placeholder="Ask your homework question or upload an image..."
                     className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20"
                   />
-                  <div className="absolute bottom-2 right-2 flex gap-2"> {/* Changed gap-1 to gap-2 */}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      id="image-upload"
-                      className="opacity-0 absolute w-8 h-8"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="h-8 w-8 p-0 flex items-center justify-center rounded-md bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer"
-                      title="Upload image"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                    </label>
+                  <div className="absolute bottom-2 right-2 flex gap-1"> {/* Changed gap-1 to gap-2 */}
                     
-                  <Button
-                      type="submit"
-                      size="sm"
-                      disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
-                    >
-                      {isAutoProcessing || isImageUploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <ArrowUp className="w-4 h-4" />
-                      )}
-                    </Button>
+
+                    
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
+                      >
+                        {isAutoProcessing || isImageUploading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ArrowUp className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <div className="border-red-300 border-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        id="image-upload"
+                        className="opacity-0 absolute w-8 h-8"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="h-8 w-8 p-0 flex items-center justify-center rounded-md bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer"
+                        title="Upload image"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </label>
+                    </div>
+
+
+
 
                   </div>
-                  
+
 
 
 
