@@ -575,7 +575,7 @@ export default function PlaygroundPage() {
                           <ArrowUp className="w-4 h-4" />
                         )}
                       </Button>
-                      <div className="border-red-300 border-2">
+                      <div >
                       <input
                         type="file"
                         ref={fileInputRef}
