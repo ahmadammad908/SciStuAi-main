@@ -18,12 +18,12 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { useSearchParams } from "next/navigation";
-
+import Image from "next/image";
 interface CustomMessage {
   role: "data" | "system" | "user" | "assistant";
   content: string;
   reasoning?: string;
-  timestamp?: Date;
+  timestamp?: Date;  
   imageUrl?: string;
 }
 
@@ -490,8 +490,8 @@ export default function PlaygroundPage() {
 
                         {(message as CustomMessage).imageUrl && (
                           <div className="rounded-[20px] overflow-hidden">
-                            <img
-                              src={(message as CustomMessage).imageUrl}
+                            <Image
+                              src={(message as CustomMessage).imageUrl || ""}
                               alt="Uploaded content"
                               className="max-w-full h-auto max-h-64 object-contain"
                             />
