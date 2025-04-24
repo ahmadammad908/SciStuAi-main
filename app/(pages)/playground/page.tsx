@@ -193,7 +193,13 @@ export default function PlaygroundPage() {
         formData.append('model', model);
         if (systemPrompt) formData.append('systemPrompt', systemPrompt);
   
-        // Add user message only after API call succeeds
+        // Add user message first
+        await append({
+          role:"user",
+          content: input || "Analyze the image",
+          imageUrl: imagePreview
+        } as CustomMessage);
+  
         const response = await fetch('/api/chat', {
           method: 'POST',
           body: formData,
@@ -206,12 +212,7 @@ export default function PlaygroundPage() {
   
         const result = await response.json();
   
-        // Add both user and assistant messages at once
-        await append({
-          role: 'user',
-          imageUrl: imagePreview
-        } as CustomMessage);
-  
+        // Add assistant response
         await append({
           role: 'assistant',
           content: result.text
@@ -228,8 +229,19 @@ export default function PlaygroundPage() {
         removeImage();
       }
     } else {
-      // Regular text chat
-      await handleSubmit(e);
+      // Regular text chat - use the existing handleSubmit
+      try {
+        // First add the user message
+      
+        // Then let handleSubmit do its work to get the assistant response
+        await handleSubmit(e);
+      } catch (error) {
+        console.error('Error in text submission:', error);
+        await append({
+          role: 'assistant',
+          content: `Error: ${error instanceof Error ? error.message : 'Failed to process your request'}`
+        } as CustomMessage);
+      }
     }
   
     // Clear input after submission
