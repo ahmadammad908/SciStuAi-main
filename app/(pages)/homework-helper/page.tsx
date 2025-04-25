@@ -560,11 +560,16 @@ export default function PlaygroundPage() {
                     placeholder="Ask your homework question or upload an image..."
                     className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20"
                   />
-                  <div className="absolute bottom-2 right-2 flex gap-1"> {/* Changed gap-1 to gap-2 */}
+                  <div className="absolute bottom-2 right-2 flex gap-2"> {/* Changed gap-1 to gap-2 */}
                     
 
                     
-                      <Button
+                      
+                      
+                      
+
+
+                    <Button
                         type="submit"
                         size="sm"
                         disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
@@ -575,23 +580,6 @@ export default function PlaygroundPage() {
                           <ArrowUp className="w-4 h-4" />
                         )}
                       </Button>
-                      <div >
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        accept="image/*"
-                        id="image-upload"
-                        className="opacity-0 absolute w-8 h-8"
-                      />
-                      <label
-                        htmlFor="image-upload"
-                        className="h-8 w-8 p-0 flex items-center justify-center rounded-md bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer"
-                        title="Upload image"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                      </label>
-                    </div>
 
 
 

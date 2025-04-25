@@ -1,4 +1,3 @@
-
 "use client";
 import ModeToggle from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +18,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+
 interface CustomMessage {
   role: "data" | "system" | "user" | "assistant";
   content: string;
@@ -47,6 +47,7 @@ export default function PlaygroundPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4000);
@@ -148,45 +149,61 @@ export default function PlaygroundPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+    if (!file) return;
 
-        // Automatically submit the form when image is loaded
-        setTimeout(() => {
-          if (formRef.current) {
-            formRef.current.dispatchEvent(
-              new Event('submit', { bubbles: true, cancelable: true })
-            );
-          }
-        }, 100); // Small delay to ensure states are updated
-      };
-      reader.readAsDataURL(file);
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('Please upload a valid image file (JPEG, PNG, GIF, or WEBP)');
+      return;
     }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image must be smaller than 5MB');
+      return;
+    }
+
+    setUploadError(null);
+    setImageFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setImagePreview(event.target.result.toString());
+      }
+    };
+    reader.onerror = () => {
+      setUploadError('Error reading file');
+      setImageFile(null);
+      setImagePreview(null);
+    };
+    reader.readAsDataURL(file);
   };
+
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // ... (previous imports remain the same)
-
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Don't proceed if already processing
     if (isLoading || isImageUploading) return;
+
+    // Clear input after submission
+    handleInputChange({
+      target: { value: '' }
+    } as React.ChangeEvent<HTMLTextAreaElement>);
 
     if (imageFile && imagePreview) {
       setIsImageUploading(true);
 
       try {
-        // Create form data for image upload
         const formData = new FormData();
         formData.append('image', imageFile);
         formData.append('prompt', input || "Analyze this image");
@@ -229,11 +246,8 @@ export default function PlaygroundPage() {
         removeImage();
       }
     } else {
-      // Regular text chat - use the existing handleSubmit
+      // Regular text chat
       try {
-        // First add the user message
-
-        // Then let handleSubmit do its work to get the assistant response
         await handleSubmit(e);
       } catch (error) {
         console.error('Error in text submission:', error);
@@ -244,16 +258,11 @@ export default function PlaygroundPage() {
       }
     }
 
-    // Clear input after submission
-    handleInputChange({
-      target: { value: '' }
-    } as React.ChangeEvent<HTMLTextAreaElement>);
-
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-  // ... (rest of the component remains the same)
+
   const toggleReasoning = (index: number) => {
     setExpandedReasoning((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
@@ -490,10 +499,14 @@ export default function PlaygroundPage() {
 
                         {(message as CustomMessage).imageUrl && (
                           <div className="rounded-[20px] overflow-hidden">
-                            <Image
+                            <img
                               src={(message as CustomMessage).imageUrl || ""}
                               alt="Uploaded content"
                               className="max-w-full h-auto max-h-64 object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).alt = "Failed to load image";
+                                (e.target as HTMLImageElement).src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNnB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBhbGlnbm1lbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzY2NiI+RW5oYW5jZWQgSW1hZ2UgUGxhY2Vob2xkZXI8L3RleHQ+PC9zdmc+";
+                              }}
                             />
                           </div>
                         )}
@@ -533,8 +546,18 @@ export default function PlaygroundPage() {
                   >
                     <Sparkles className="w-4 h-4" />
                     <span className="animate-pulse">
-                      {isImageUploading ? "Analyzing the image  ..." : "Thinking..."}
+                      {isImageUploading ? "Analyzing the image..." : "Thinking..."}
                     </span>
+                  </motion.div>
+                )}
+
+                {uploadError && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-red-500 text-sm p-2 rounded bg-red-50 dark:bg-red-900/20"
+                  >
+                    {uploadError}
                   </motion.div>
                 )}
 
@@ -545,6 +568,24 @@ export default function PlaygroundPage() {
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
               <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
                 <div className="relative">
+                  {imagePreview && (
+                    <div className="relative mb-2">
+                      <div className="rounded-lg overflow-hidden max-w-[200px]">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="max-w-full h-auto"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-1 right-1 bg-white dark:bg-zinc-800 rounded-full p-1 shadow"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                   <Textarea
                     ref={textareaRef}
                     value={input}
@@ -560,29 +601,28 @@ export default function PlaygroundPage() {
                     placeholder="Ask your homework question or upload an image..."
                     className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20"
                   />
-                  <div className="absolute bottom-2 right-2 flex gap-1"> {/* Changed gap-1 to gap-2 */}
+                  <div className="absolute bottom-2 right-2 flex gap-2">
                     
 
-                    
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
-                      >
-                        {isAutoProcessing || isImageUploading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <ArrowUp className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <div >
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
+                    >
+                      {isAutoProcessing || isImageUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ArrowUp className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <div>
                       <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageUpload}
                         accept="image/*"
                         id="image-upload"
-                        className="opacity-0 absolute w-8 h-8"
+                        className="hidden"
                       />
                       <label
                         htmlFor="image-upload"
@@ -593,14 +633,7 @@ export default function PlaygroundPage() {
                       </label>
                     </div>
 
-
-
-
                   </div>
-
-
-
-
                 </div>
               </form>
             </div>
@@ -673,6 +706,16 @@ export default function PlaygroundPage() {
           </aside>
         </section>
       </main>
+
+      {/* Loading overlay for image upload */}
+      {isImageUploading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Uploading and analyzing image...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
