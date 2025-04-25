@@ -35,7 +35,7 @@ interface CodeProps {
 }
 
 export default function PlaygroundPage() {
-  const [model, setModel] = useState("openai:gpt-4o");
+  const [model, setModel] = useState("gemini:gemini-2.0-flash-lite");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [expandedReasoning, setExpandedReasoning] = useState<number[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -651,7 +651,7 @@ export default function PlaygroundPage() {
           </div>
 
           {/* Settings */}
-          <aside className="w-full md:w-80 border-t md:border-t-0 md:border-l dark:border-zinc-800 border-zinc-200">
+          <aside className="w-full md:w-80 border-t md:border-t-0 md:border-l dark:border-zinc-800 border-zinc-200 ">
             <Tabs defaultValue="model" className="h-full flex flex-col">
               <TabsList className="w-full dark:bg-zinc-900/50 bg-zinc-100 border dark:border-zinc-800 border-zinc-200">
                 <TabsTrigger value="model" className="flex-1 text-xs sm:text-sm">Model</TabsTrigger>
