@@ -564,79 +564,90 @@ export default function PlaygroundPage() {
                 <div ref={bottomRef} />
               </div>
             </ScrollArea>
-
             <div className="p-4 border-t dark:border-zinc-800 border-zinc-200">
-              <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
-                <div className="relative">
-                  {imagePreview && (
-                    <div className="relative mb-2">
-                      <div className="rounded-lg overflow-hidden max-w-[200px]">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="max-w-full h-auto"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute top-1 right-1 bg-white dark:bg-zinc-800 rounded-full p-1 shadow"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  <Textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={handleInputChange}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        formRef.current?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                      }
-                    }}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
-                    placeholder="Ask your homework question or upload an image..."
-                    className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20"
-                  />
-                  <div className="absolute bottom-2 right-2 flex gap-2">
-                    
-
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
-                    >
-                      {isAutoProcessing || isImageUploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <ArrowUp className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <div>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        accept="image/*"
-                        id="image-upload"
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="image-upload"
-                        className="h-8 w-8 p-0 flex items-center justify-center rounded-md bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer"
-                        title="Upload image"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                      </label>
-                    </div>
-
-                  </div>
-                </div>
-              </form>
-            </div>
+  <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
+    <div className="relative">
+      {imagePreview && (
+        <div className="relative mb-2 flex justify-center">
+          <div className="relative rounded-lg overflow-hidden max-w-full">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="max-w-full h-auto max-h-40 md:max-h-64 object-contain"
+            />
+            <button
+              type="button"
+              onClick={removeImage}
+               className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 transition-colors"
+              aria-label="Remove image"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="relative flex items-center">
+        <Textarea
+          ref={textareaRef}
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              formRef.current?.dispatchEvent(
+                new Event('submit', { bubbles: true, cancelable: true })
+              );
+            }
+          }}
+          placeholder="Ask your homework question or upload an image..."
+          className="min-h-[60px] w-full bg-transparent dark:bg-zinc-900/50 border dark:border-zinc-800 border-zinc-200 text-base pr-20 resize-none"
+          rows={1}
+        />
+        <div className="absolute right-2 bottom-2 flex gap-1">
+          <div className="flex items-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              id="image-upload"
+              className="hidden"
+            />
+            <label
+              htmlFor="image-upload"
+              className="h-8 w-8 p-0 flex items-center justify-center rounded-md bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
+              title="Upload image"
+              aria-label="Upload image"
+            >
+              {isImageUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+            </label>
+          </div>
+          <Button
+            type="submit"
+            size="icon"
+            className="h-8 w-8"
+            disabled={isLoading || (!input.trim() && !imageFile) || isAutoProcessing}
+          >
+            {isAutoProcessing || isImageUploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ArrowUp className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+    {uploadError && (
+      <div className="mt-2 text-red-500 text-sm">
+        {uploadError}
+      </div>
+    )}
+  </form>
+</div>
           </div>
 
           {/* Settings */}
